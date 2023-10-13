@@ -243,8 +243,6 @@ namespace RustyCompass
         public static ConfigEntry<Toggle> _CompassPinsEnabled = null!;
         public static ConfigEntry<float> _CompassPinsMaxDistance = null!;
         public static ConfigEntry<float> _CompassPinsMaxSize = null!;
-
-
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description,
             bool synchronizedSetting = true)
         {
