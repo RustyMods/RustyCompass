@@ -17,7 +17,7 @@ namespace RustyCompass
     public class RustyCompassPlugin : BaseUnityPlugin
     {
         internal const string ModName = "RustyCompass";
-        internal const string ModVersion = "1.0.0";
+        internal const string ModVersion = "1.0.1";
         internal const string Author = "RustyMods";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";

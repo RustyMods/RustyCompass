@@ -269,6 +269,8 @@ public static class HUDPatches
                     RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.On
                     &&
                     RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
+                    &&
+                    RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
                 );
                 
                 // Set size of pin
