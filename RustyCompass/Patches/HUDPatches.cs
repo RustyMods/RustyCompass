@@ -256,9 +256,9 @@ public static class HUDPatches
                     pinImage.color = RustyCompassPlugin._CompassPinsColor.Value;
                     name = name switch
                     {
-                        "mapicon_trader" => "Haldor",
-                        "mapicon_start" => "Spawn",
-                        "mapicon_hildir" => "Hildir",
+                        "mapicon_trader" => "$rusty_compass_haldor",
+                        "mapicon_start" => "$rusty_compass_spawn",
+                        "mapicon_hildir" => "$rusty_compass_hildr",
                         _ => name
                     };
                     pinText.text = Localization.instance.Localize(name);

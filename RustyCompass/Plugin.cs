@@ -7,7 +7,6 @@ using BepInEx.Logging;
 using HarmonyLib;
 using JetBrains.Annotations;
 using LocalizationManager;
-using RustyCompass.Patches;
 using RustyCompass.Utilities;
 using ServerSync;
 using UnityEngine;
@@ -70,13 +69,13 @@ namespace RustyCompass
         
         public void Awake()
         {
-            // Uncomment the line below to use the LocalizationManager for localizing your mod.
-            //Localizer.Load(); // Use this to initialize the LocalizationManager (for more information on LocalizationManager, see the LocalizationManager documentation https://github.com/blaxxun-boop/LocalizationManager#example-project).
-
-            // _serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On,
-            //     "If on, the configuration is locked and can be changed by server admins only.");
-            // _ = ConfigSync.AddLockingConfigEntry(_serverConfigLocked);
-
+            Localizer.Load();
+            
+            #region Configurations
+            _serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On,
+                "If on, the configuration is locked and can be changed by server admins only.");
+            _ = ConfigSync.AddLockingConfigEntry(_serverConfigLocked);
+            
             _isModActive = config(
                 "1 - General Settings",
                 "_Enabled",
@@ -159,12 +158,14 @@ namespace RustyCompass
             _CompassPinsColor = config("3 - Bar Compass Settings", "Compass Pins Color", Color.white,
                 "Color of the pins on the bar", false);
             _CompassPinsEnabled = config("3 - Bar Compass Settings", "Bar Pins Enabled", Toggle.On,
-                "If on, pins are added to the compass bar", false);
+                "If on, pins are added to the compass bar", true);
             _CompassPinsMaxDistance = config("3 - Bar Compass Settings", "Bar Pins Max Distance", 500f,
                 "Max distance pins appear on bar", false);
             _CompassPinsMaxSize = config("3 - Bar Compass Settings", "Bar Pins Max Size", 50f,
                 "Size of compass bar pins", false);
-
+            #endregion
+            
+            #region Register sprites
             CompassSprite = SpriteManager.RegisterSprite("rustyCompassIcon.png");
             CompassArrow = SpriteManager.RegisterSprite("compassArrowIcon.png");
             CompassSimple = SpriteManager.RegisterSprite("rustyCompassSimple.png");
@@ -176,7 +177,8 @@ namespace RustyCompass
             EastIcon = SpriteManager.RegisterSprite("compassEast.png");
             WestIcon = SpriteManager.RegisterSprite("compassWest.png");
             RuneIcon = SpriteManager.RegisterSprite("compassRune.png");
-
+            #endregion
+            
             Assembly assembly = Assembly.GetExecutingAssembly();
             
             _harmony.PatchAll(assembly);
@@ -217,7 +219,7 @@ namespace RustyCompass
 
         #region ConfigOptions
 
-        // private static ConfigEntry<Toggle> _serverConfigLocked = null!;
+        private static ConfigEntry<Toggle> _serverConfigLocked = null!;
         
         // General Settings
         public static ConfigEntry<Toggle> _isModActive = null!;

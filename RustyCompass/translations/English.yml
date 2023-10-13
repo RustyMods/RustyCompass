@@ -1,2 +1,4 @@
-# Ready to use english translation file for the plugin
-# (for more information on LocalizationManager, see the LocalizationManager documentation https://github.com/blaxxun-boop/LocalizationManager#example-project).
+#Rusty Compass Localization
+rusty_compass_haldor: "Haldor"
+rusty_compass_spawn: "Spawn"
+rusty_compass_hildir: "Hildir"
