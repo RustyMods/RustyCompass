@@ -168,6 +168,10 @@ namespace RustyCompass
                 "Max distance pins appear on bar", false);
             _CompassPinsMaxSize = config("3 - Bar Compass Settings", "Bar Pins Max Size", 50f,
                 "Size of compass bar pins", false);
+
+            _TameTrackEnabled = config("4 - Tame Tracker Settings", "Tame Tracker", Toggle.Off,
+                "If on, tames are automatically pinned on compass bar and minimap", false);
+            
             #endregion
             
             #region Register sprites
@@ -339,6 +343,9 @@ namespace RustyCompass
         public static ConfigEntry<Toggle> _CompassPinsEnabled = null!;
         public static ConfigEntry<float> _CompassPinsMaxDistance = null!;
         public static ConfigEntry<float> _CompassPinsMaxSize = null!;
+        
+        // Tame Tracker Settings
+        public static ConfigEntry<Toggle> _TameTrackEnabled = null!;
         private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description,
             bool synchronizedSetting = true)
         {

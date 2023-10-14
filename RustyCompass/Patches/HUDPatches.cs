@@ -518,11 +518,7 @@ public static class HUDPatches
                     outputList.Add(pin);
                 }
             }
-
-            // if (outputList.Count == 0)
-            // {
-            //     var all = ZNetView.FindObjectOfType<GameObject>();
-            // }
+            
             return outputList;
         }
         private static void UpdateCompassCircle()
