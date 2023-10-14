@@ -98,6 +98,9 @@
         <Reference Include="UnityEngine.IMGUIModule">
             <HintPath>$(CorlibPath)\UnityEngine.IMGUIModule.dll</HintPath>
         </Reference>
+        <Reference Include="UnityEngine.ParticleSystemModule">
+          <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+        </Reference>
         <Reference Include="UnityEngine.PhysicsModule">
             <HintPath>$(CorlibPath)\UnityEngine.PhysicsModule.dll</HintPath>
         </Reference>
@@ -112,10 +115,12 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="ItemManager.cs" />
         <Compile Include="LocalizationManager.cs" />
         <Compile Include="Patches\HUDPatches.cs" />
         <Compile Include="Plugin.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="StatusEffectManager.cs" />
         <Compile Include="Utilities\SpriteManager.cs" />
         <Compile Include="VersionHandshake.cs" />
     </ItemGroup>
@@ -123,44 +128,47 @@
         <None Include="App.config" />
     </ItemGroup>
     <ItemGroup>
-        <EmbeddedResource Include="..\..\..\..\..\Downloads\rustyCompassIcon.png">
-          <Link>assets\rustyCompassIcon.png</Link>
-        </EmbeddedResource>
-        <EmbeddedResource Include="..\..\..\..\..\Downloads\rustyCompassSimple.png">
-          <Link>assets\rustyCompassSimple.png</Link>
-        </EmbeddedResource>
-        <EmbeddedResource Include="..\..\..\..\..\Downloads\rustyCompassBW.png">
-          <Link>assets\rustyCompassBW.png</Link>
-        </EmbeddedResource>
-        <EmbeddedResource Include="..\..\..\..\..\Downloads\rustyCompassViking.png">
-          <Link>assets\rustyCompassViking.png</Link>
-        </EmbeddedResource>
         <EmbeddedResource Include="..\..\..\..\..\Downloads\compassEast.png">
-          <Link>assets\compassEast.png</Link>
+          <Link>icons\compassEast.png</Link>
         </EmbeddedResource>
         <EmbeddedResource Include="..\..\..\..\..\Downloads\compassNorth.png">
-          <Link>assets\compassNorth.png</Link>
+          <Link>icons\compassNorth.png</Link>
         </EmbeddedResource>
         <EmbeddedResource Include="..\..\..\..\..\Downloads\compassRune.png">
-          <Link>assets\compassRune.png</Link>
+          <Link>icons\compassRune.png</Link>
         </EmbeddedResource>
         <EmbeddedResource Include="..\..\..\..\..\Downloads\compassSouth.png">
-          <Link>assets\compassSouth.png</Link>
+          <Link>icons\compassSouth.png</Link>
         </EmbeddedResource>
         <EmbeddedResource Include="..\..\..\..\..\Downloads\compassWest.png">
-          <Link>assets\compassWest.png</Link>
+          <Link>icons\compassWest.png</Link>
+        </EmbeddedResource>
+        <EmbeddedResource Include="..\..\..\..\..\Downloads\rustyCompassBW.png">
+          <Link>icons\rustyCompassBW.png</Link>
+        </EmbeddedResource>
+        <EmbeddedResource Include="..\..\..\..\..\Downloads\rustyCompassIcon.png">
+          <Link>icons\rustyCompassIcon.png</Link>
+        </EmbeddedResource>
+        <EmbeddedResource Include="..\..\..\..\..\Downloads\rustyCompassSimple.png">
+          <Link>icons\rustyCompassSimple.png</Link>
+        </EmbeddedResource>
+        <EmbeddedResource Include="..\..\..\..\..\Downloads\rustyCompassViking.png">
+          <Link>icons\rustyCompassViking.png</Link>
+        </EmbeddedResource>
+        <EmbeddedResource Include="..\..\..\Bundles\compassbundle">
+          <Link>assets\compassbundle</Link>
         </EmbeddedResource>
         <Content Include=".gitignore" />
-        <EmbeddedResource Include="assets\compassIcon.png" />
-        <EmbeddedResource Include="assets\compassArrowIcon.png" />
-        <None Include="assets\CompassBorderIcon.png" />
-        <EmbeddedResource Include="assets\CompassBackgroundIcon.png" />
         <Content Include="environment.props" />
         <Content Include="ILRepack.targets" />
         <Content Include="Libs\ServerSync.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <Content Include="Libs\StatusEffectManager.dll" />
         <Content Include="LICENSE.md" />
+        <EmbeddedResource Include="icons\compassArrowIcon.png" />
+        <EmbeddedResource Include="icons\CompassBackgroundIcon.png" />
+        <EmbeddedResource Include="icons\compassIcon.png" />
         <EmbeddedResource Include="translations\English.yml" />
         <Content Include="UpdateManifest.ps1" />
     </ItemGroup>

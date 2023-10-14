@@ -5,7 +5,7 @@ namespace RustyCompass.Utilities;
 
 public static class SpriteManager
 {
-    public static Sprite? RegisterSprite(string fileName, string folderName = "assets")
+    public static Sprite? RegisterSprite(string fileName, string folderName = "icons")
     {
         Assembly assembly = Assembly.GetExecutingAssembly();
 

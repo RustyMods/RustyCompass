@@ -178,6 +178,13 @@ public static class HUDPatches
         private static Vector3 playerPosition;
         private static List<Minimap.PinData> BarPins = new();
         
+        private static bool compassCircle;
+        private static bool biomesName;
+        private static bool windIcon;
+
+        private static bool compassBarActive;
+        private static bool barPinActive;
+
         static void Postfix(Hud __instance)
         {
             root = __instance.m_rootObject;
@@ -187,6 +194,61 @@ public static class HUDPatches
             UpdateCompassCircle();
             UpdateCompassBar();
             UpdateBarPins();
+            if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On) CheckPlayerInventory();
+        }
+
+        private static void CheckPlayerInventory()
+        {
+            if (Player.m_localPlayer == null) return;
+            List<ItemDrop.ItemData> equippedItems = Player.m_localPlayer.GetInventory().GetEquippedItems();
+            foreach (var item in equippedItems)
+            {
+                if (item.m_shared.m_name
+                    is "$item_compass_token_brass"
+                    or "$item_compass_token_gold"
+                    or "$item_compass_token_silver"
+                    or "$item_compass_token_darkgold")
+                {
+                    SetCompassActive(item.m_shared.m_name);
+                    break;
+                }
+                compassBarActive = false;
+                compassCircle = false;
+                barPinActive = false;
+                biomesName = false;
+                windIcon = false;
+            }
+        }
+        private static void SetCompassActive(string itemName)
+        {
+            compassBarActive = false;
+            compassCircle = false;
+            barPinActive = false;
+            biomesName = false;
+            windIcon = false;
+            
+            if (itemName == "$item_compass_token_brass")
+            {
+                compassCircle = true;
+            }
+
+            if (itemName == "$item_compass_token_gold")
+            {
+                compassBarActive = true;
+            }
+
+            if (itemName == "$item_compass_token_silver")
+            {
+                compassCircle = true;
+                biomesName = true;
+                windIcon = true;
+            }
+
+            if (itemName == "$item_compass_token_darkgold")
+            {
+                compassBarActive = true;
+                barPinActive = true;
+            }
         }
         private static void UpdateCompassBar()
         {
@@ -209,10 +271,20 @@ public static class HUDPatches
                 iconRect.anchoredPosition = new Vector2(positionX, positionY);
                 iconImage.color = RustyCompassPlugin._CompassBarColor.Value;
                 // Enable/Disable
-                iconElement.gameObject.SetActive(
-                    RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On 
-                    && RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
+                if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
+                {
+                    iconElement.gameObject.SetActive(
+                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
+                        && compassBarActive
                     );
+                }
+                else
+                {
+                    iconElement.gameObject.SetActive(
+                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On 
+                        && RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
+                        );
+                }
             }
         }
 
@@ -263,15 +335,29 @@ public static class HUDPatches
                     _ => name
                 };
                 pinText.text = Localization.instance.Localize(name);
-                pin.SetActive(
-                    totalDistance < maxDistance 
-                    && 
-                    RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.On
-                    &&
-                    RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
-                    &&
-                    RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
-                );
+
+                if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
+                {
+                    pin.SetActive(
+                        totalDistance < maxDistance
+                        &&
+                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
+                        && 
+                        barPinActive
+                    );
+                }
+                else
+                {
+                    pin.SetActive(
+                        totalDistance < maxDistance 
+                        && 
+                        RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.On
+                        &&
+                        RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
+                        &&
+                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
+                    );
+                }
                 
                 // Set size of pin
                 float percentage = maxSize / totalDistance;
@@ -437,7 +523,7 @@ public static class HUDPatches
             var hand = compassContainer.Find("hand");
             var biomes = compassContainer.transform.Find("biomes");
             var windMarker = compassContainer.Find("windMarker");
-            
+
             RectTransform compassRect = compassContainer.GetComponent<RectTransform>();
             RectTransform backgroundRect = background.GetComponent<RectTransform>();
             Image backgroundImage = background.GetComponent<Image>();
@@ -468,6 +554,10 @@ public static class HUDPatches
                 var currentBiomes = Player.m_localPlayer.m_currentBiome;
                 biomesText.text = currentBiomes.ToString();
                 biomesText.color = RustyCompassPlugin._BiomesColor.Value;
+                if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
+                {
+                    biomesText.gameObject.SetActive(biomesName);
+                }
             }
             // Set wind marker
             windMarkerImage.color = RustyCompassPlugin._WindMarkerColor.Value;
@@ -475,8 +565,26 @@ public static class HUDPatches
                 0.0f, 0.0f,
                 -Quaternion.LookRotation(EnvMan.instance.GetWindDir()).eulerAngles.y
                 );
+            if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
+            {
+                windMarker.gameObject.SetActive(windIcon);
+            }
             // Enable/Disable
-            compassContainer.gameObject.SetActive(RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On && RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Circle);
+            if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
+            {
+                compassContainer.gameObject.SetActive(
+                    RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
+                    && compassCircle);
+                
+            }
+            else
+            {
+                compassContainer.gameObject.SetActive(
+                    RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On 
+                    && RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Circle
+                );
+            }
+            
         }
     }
 }

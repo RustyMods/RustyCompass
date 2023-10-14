@@ -5,10 +5,12 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using ItemManager;
 using JetBrains.Annotations;
 using LocalizationManager;
 using RustyCompass.Utilities;
 using ServerSync;
+using StatusEffectManager;
 using UnityEngine;
 
 namespace RustyCompass
@@ -17,7 +19,7 @@ namespace RustyCompass
     public class RustyCompassPlugin : BaseUnityPlugin
     {
         internal const string ModName = "RustyCompass";
-        internal const string ModVersion = "1.0.1";
+        internal const string ModVersion = "1.0.2";
         internal const string Author = "RustyMods";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -85,6 +87,9 @@ namespace RustyCompass
                 );
             _CompassType = config("1 - General Settings", "Compass Type", CompassType.Bar, "Compass bar or circle",
                 false);
+
+            _useCompassTokens = config("1 - General Settings", "Use Compass Tokens", Toggle.Off,
+                "If on, compass features are enabled using quest items", true);
 
             Vector2 defaultPos = new Vector2(820f, 400f);
             _CompassPosition = config(
@@ -178,6 +183,96 @@ namespace RustyCompass
             WestIcon = SpriteManager.RegisterSprite("compassWest.png");
             RuneIcon = SpriteManager.RegisterSprite("compassRune.png");
             #endregion
+            #region Register Prefabs
+            Item CompassToken1 = new("compassbundle", "RS_Compass_Token_Gold");
+            CompassToken1.Name.English("Lost Compass Token");
+            CompassToken1.Description.English("Awakens the third eye, giving access to a compass bar");
+            CompassToken1.Crafting.Add(CraftingTable.Forge, 2);
+            CompassToken1.RequiredItems.Add("Bronze", 5);
+            CompassToken1.RequiredItems.Add("Resin", 20);
+            CompassToken1.RequiredItems.Add("Flint", 5);
+            CompassToken1.RequiredItems.Add("CryptKey", 1);
+            CompassToken1.CraftAmount = 1;
+            CompassToken1.Configurable = Configurability.Recipe;
+
+            Item CompassToken2 = new("compassbundle", "RS_Compass_Token_Brass");
+            CompassToken2.Name.English("Rusty Compass Token");
+            CompassToken2.Description.English("Enables the use of a circular compass");
+            CompassToken2.Crafting.Add(CraftingTable.Workbench, 2);
+            CompassToken2.RequiredItems.Add("Copper", 5);
+            CompassToken2.RequiredItems.Add("Resin", 10);
+            CompassToken2.RequiredItems.Add("Flint", 5);
+            CompassToken2.RequiredItems.Add("HardAntler", 1);
+            CompassToken2.CraftAmount = 1;
+            CompassToken2.Configurable = Configurability.Recipe;
+
+            Item CompassToken3 = new("compassbundle", "RS_Compass_Token_Silver");
+            CompassToken3.Name.English("Silver Compass Token");
+            CompassToken3.Description.English("Enables the use of a circular compass and a deeper understanding of their location as well as wind direction");
+            CompassToken3.Crafting.Add(CraftingTable.ArtisanTable, 1);
+            CompassToken3.RequiredItems.Add("Silver", 5);
+            CompassToken3.RequiredItems.Add("Resin", 20);
+            CompassToken3.RequiredItems.Add("Obsidian", 5);
+            CompassToken3.RequiredItems.Add("Crystal", 10);
+            CompassToken3.CraftAmount = 1;
+            CompassToken3.Configurable = Configurability.Recipe;
+            
+            Item CompassToken4 = new("compassbundle", "RS_Compass_Token_DarkGold");
+            CompassToken4.Name.English("Forgotten Compass Token");
+            CompassToken4.Description.English("Grants full usage of the compass bar with senses of their surroundings");
+            CompassToken4.Crafting.Add(CraftingTable.ArtisanTable, 1);
+            CompassToken4.RequiredItems.Add("BlackMetal", 5);
+            CompassToken4.RequiredItems.Add("Resin", 20);
+            CompassToken4.RequiredItems.Add("DragonTear", 1);
+            CompassToken4.RequiredItems.Add("Coins", 100);
+            CompassToken4.CraftAmount = 1;
+            CompassToken4.Configurable = Configurability.Recipe;
+            #endregion
+            #region Create custom Status Effects
+            CustomSE CompassGoldEffect = new("se_compass_gold");
+            CompassGoldEffect.Name.English("Lost Compass");
+            CompassGoldEffect.Type = EffectType.Equip;
+            CompassGoldEffect.IconSprite = EastIcon;
+            CompassGoldEffect.Effect.m_startMessage = "Lost Compass is active";
+            CompassGoldEffect.Effect.m_startMessageType = MessageHud.MessageType.Center;
+            CompassGoldEffect.Effect.m_stopMessage = "";
+            CompassGoldEffect.Effect.m_stopMessageType = MessageHud.MessageType.TopLeft;
+            CompassGoldEffect.Effect.m_tooltip = "Your sense of direction is elevated";
+            CompassGoldEffect.AddSEToPrefab(CompassGoldEffect, "RS_Compass_Token_Gold");
+            
+            CustomSE CompassBrassEffect = new("se_compass_brass");
+            CompassBrassEffect.Name.English("Rusty Compass");
+            CompassBrassEffect.Type = EffectType.Equip;
+            CompassBrassEffect.IconSprite = WestIcon;
+            CompassBrassEffect.Effect.m_startMessage = "Rusty Compass is active";
+            CompassBrassEffect.Effect.m_startMessageType = MessageHud.MessageType.Center;
+            CompassBrassEffect.Effect.m_stopMessage = "";
+            CompassBrassEffect.Effect.m_stopMessageType = MessageHud.MessageType.TopLeft;
+            CompassBrassEffect.Effect.m_tooltip = "Your sense of direction is elevated";
+            CompassBrassEffect.AddSEToPrefab(CompassBrassEffect, "RS_Compass_Token_Brass");
+            
+            CustomSE CompassSilverEffect = new("se_compass_silver");
+            CompassSilverEffect.Name.English("Silver Compass");
+            CompassSilverEffect.Type = EffectType.Equip;
+            CompassSilverEffect.IconSprite = SouthIcon;
+            CompassSilverEffect.Effect.m_startMessage = "Silver Compass is active";
+            CompassSilverEffect.Effect.m_startMessageType = MessageHud.MessageType.Center;
+            CompassSilverEffect.Effect.m_stopMessage = "";
+            CompassSilverEffect.Effect.m_stopMessageType = MessageHud.MessageType.TopLeft;
+            CompassSilverEffect.Effect.m_tooltip = "Your sense of direction is elevated";
+            CompassSilverEffect.AddSEToPrefab(CompassSilverEffect, "RS_Compass_Token_Silver");
+            
+            CustomSE CompassDarkGoldEffect = new("se_compass_darkgold");
+            CompassDarkGoldEffect.Name.English("Forgotten Compass");
+            CompassDarkGoldEffect.Type = EffectType.Equip;
+            CompassDarkGoldEffect.IconSprite = SouthIcon;
+            CompassDarkGoldEffect.Effect.m_startMessage = "Forgotten Compass is active";
+            CompassDarkGoldEffect.Effect.m_startMessageType = MessageHud.MessageType.Center;
+            CompassDarkGoldEffect.Effect.m_stopMessage = "";
+            CompassDarkGoldEffect.Effect.m_stopMessageType = MessageHud.MessageType.TopLeft;
+            CompassDarkGoldEffect.Effect.m_tooltip = "Your sense of direction is elevated";
+            CompassDarkGoldEffect.AddSEToPrefab(CompassDarkGoldEffect, "RS_Compass_Token_DarkGold");
+            #endregion
             
             Assembly assembly = Assembly.GetExecutingAssembly();
             
@@ -224,7 +319,8 @@ namespace RustyCompass
         // General Settings
         public static ConfigEntry<Toggle> _isModActive = null!;
         public static ConfigEntry<CompassType> _CompassType = null!;
-        
+        public static ConfigEntry<Toggle> _useCompassTokens = null!;
+
         // Circle Compass Settings
         public static ConfigEntry<Color> _BiomesColor = null!;
         public static ConfigEntry<Color> _CompassColor = null!;
