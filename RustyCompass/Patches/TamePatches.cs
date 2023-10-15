@@ -1,5 +1,6 @@
 ﻿using System;
 using HarmonyLib;
+using UnityEngine;
 
 namespace RustyCompass.Patches;
 
@@ -13,9 +14,14 @@ public static class TamePatches
             if (!__instance || !Player.m_localPlayer) return;
             try
             {
+                __instance.TryGetComponent(out ZNetView zNet);
+                if (!zNet) return;
+                ZDO? zdo = zNet.GetZDO();
+                if (!zdo.IsValid()) return;
                 string? name = __instance.GetHoverName();
-                ZDO? zdo = __instance.gameObject.GetComponent<ZNetView>().GetZDO();
-                var target = __instance.m_monsterAI.GetFollowTarget();
+                if (name == null) return;
+                if (!__instance.m_monsterAI) return;
+                GameObject? target = __instance.m_monsterAI.GetFollowTarget();
                 if (target != null)
                 {
                     if (target.GetComponent<Player>().GetHoverName() == Player.m_localPlayer.GetHoverName())
@@ -24,21 +30,13 @@ public static class TamePatches
                         MinimapPatches.MinimapAwakePatch.TempTames.Add(zdo, name);
                     }
                 }
-
-                if (__instance.HaveSaddle())
-                {
-                    if (__instance.m_saddle.isActiveAndEnabled)
-                    {
-                        if (MinimapPatches.MinimapAwakePatch.TempTames.ContainsKey(zdo)) return;
-                        MinimapPatches.MinimapAwakePatch.TempTames.Add(zdo, name);
-                    }
-                }
-            }
-            catch (ArgumentNullException)
-            {
-                // MinimapAwakePatch.TempTames.Clear();
-                // MinimapAwakePatch.TempTamePins.Clear();
-            }
+                if (!__instance.HaveSaddle()) return;
+                if (!__instance.m_saddle.isActiveAndEnabled) return;
+                    
+                if (MinimapPatches.MinimapAwakePatch.TempTames.ContainsKey(zdo)) return;
+                MinimapPatches.MinimapAwakePatch.TempTames.Add(zdo, name);
+                
+            } catch (NullReferenceException) {}
         }
     }
     [HarmonyPatch(typeof(Tameable), nameof(Tameable.Awake))]
@@ -47,11 +45,14 @@ public static class TamePatches
         private static void Postfix(Tameable __instance)
         {
             if (!__instance || !Player.m_localPlayer) return;
-            var name = __instance.GetHoverName();
-            if (name == null) return;
-            var zdo = __instance.gameObject.GetComponent<ZNetView>().GetZDO();
+            __instance.TryGetComponent(out ZNetView zNet);
+            if (!zNet) return;
+            ZDO zdo = zNet.GetZDO();
             if (!zdo.IsValid()) return;
-            var target = __instance.m_monsterAI.GetFollowTarget();
+            string name = __instance.GetHoverName();
+            if (name == null) return;
+            if (!__instance.m_monsterAI) return;
+            GameObject target = __instance.m_monsterAI.GetFollowTarget();
             if (target != null)
             {
                 if (target.GetComponent<Player>().GetHoverName() == Player.m_localPlayer.GetHoverName())
@@ -61,14 +62,10 @@ public static class TamePatches
                 }
             }
 
-            if (__instance.HaveSaddle())
-            {
-                if (__instance.m_saddle.isActiveAndEnabled)
-                {
-                    if (MinimapPatches.MinimapAwakePatch.TempTames.ContainsKey(zdo)) return;
-                    MinimapPatches.MinimapAwakePatch.TempTames.Add(zdo, name);
-                }
-            };
+            if (!__instance.HaveSaddle()) return;
+            if (!__instance.m_saddle.isActiveAndEnabled) return;
+            if (MinimapPatches.MinimapAwakePatch.TempTames.ContainsKey(zdo)) return;
+            MinimapPatches.MinimapAwakePatch.TempTames.Add(zdo, name);
         }
     }
 
@@ -87,8 +84,10 @@ public static class TamePatches
         private static void Postfix(Tameable __instance)
         {
             if (!__instance) return;
-            var name = __instance.GetHoverName();
-            var zdo = __instance.gameObject.GetComponent<ZNetView>().GetZDO();
+            __instance.TryGetComponent(out ZNetView zNet);
+            if (!zNet) return;
+            ZDO zdo = zNet.GetZDO();
+            string name = __instance.GetHoverName();
             if (__instance.m_saddle.isActiveAndEnabled)
             {
                 MinimapPatches.MinimapAwakePatch.TempTames.Add(zdo, name);
@@ -106,29 +105,36 @@ public static class TamePatches
         private static void Postfix(Tameable __instance)
         {
             if (!__instance) return;
-            var target = __instance.m_monsterAI.GetFollowTarget();
-            var player = Player.m_localPlayer;
+            Player player = Player.m_localPlayer;
             if (!player) return;
-            
-            var zdo = __instance.gameObject.GetComponent<ZNetView>().GetZDO();
-            if (target != null)
+            try
             {
-                var playerName = player.GetHoverName();
-                var targetName = target.GetComponent<Player>().GetHoverName();
-                if (playerName == targetName)
+                __instance.TryGetComponent(out ZNetView zNet);
+                if (!zNet) return;
+                ZDO zdo = zNet.GetZDO();
+                if (!zdo.IsValid()) return;
+                if (!__instance.m_monsterAI) return;
+                GameObject? target = __instance.m_monsterAI.GetFollowTarget();
+                if (target != null)
                 {
-                    if (MinimapPatches.MinimapAwakePatch.TempTames.ContainsKey(zdo)) return;
-                    MinimapPatches.MinimapAwakePatch.TempTames.Add(zdo, __instance.GetHoverName());
+                    string playerName = player.GetHoverName();
+                    string targetName = target.GetComponent<Player>().GetHoverName();
+                    if (playerName == targetName)
+                    {
+                        if (MinimapPatches.MinimapAwakePatch.TempTames.ContainsKey(zdo)) return;
+                        MinimapPatches.MinimapAwakePatch.TempTames.Add(zdo, __instance.GetHoverName());
+                    }
+                    else
+                    {
+                        MinimapPatches.MinimapAwakePatch.TempTames.Remove(zdo);
+                    }
                 }
                 else
                 {
                     MinimapPatches.MinimapAwakePatch.TempTames.Remove(zdo);
                 }
-            }
-            else
-            {
-                MinimapPatches.MinimapAwakePatch.TempTames.Remove(zdo);
-            }
+                
+            } catch (NullReferenceException) {}
         }
     }
 
@@ -138,9 +144,11 @@ public static class TamePatches
         private static void Postfix(Tameable __instance)
         {
             if (!__instance) return;
-            var name = __instance.GetHoverName();
-            var zdo = __instance.gameObject.GetComponent<ZNetView>().GetZDO();
-            
+            string name = __instance.GetHoverName();
+            __instance.TryGetComponent(out ZNetView zNet);
+            if (!zNet) return;
+            ZDO zdo = zNet.GetZDO();
+            if (!zdo.IsValid()) return;
             if (MinimapPatches.MinimapAwakePatch.TempTames.ContainsKey(zdo))
             {
                 MinimapPatches.MinimapAwakePatch.TempTames[zdo] = name;
@@ -154,11 +162,11 @@ public static class TamePatches
         private static void Postfix(Tameable __instance)
         {
             if (!__instance) return;
-            var zdo = __instance.gameObject.GetComponent<ZNetView>().GetZDO();
+            __instance.TryGetComponent(out ZNetView zNet);
+            if (!zNet) return;
+            ZDO zdo = zNet.GetZDO();
+            if (!zdo.IsValid()) return;
             if (MinimapPatches.MinimapAwakePatch.TempTames.ContainsKey(zdo)) MinimapPatches.MinimapAwakePatch.TempTames.Remove(zdo);
         }
     }
-    
-
-    
 }

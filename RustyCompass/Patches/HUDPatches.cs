@@ -201,53 +201,41 @@ public static class HUDPatches
         {
             if (Player.m_localPlayer == null) return;
             List<ItemDrop.ItemData> equippedItems = Player.m_localPlayer.GetInventory().GetEquippedItems();
-            foreach (var item in equippedItems)
-            {
-                if (item.m_shared.m_name
-                    is "$item_compass_token_brass"
-                    or "$item_compass_token_gold"
-                    or "$item_compass_token_silver"
-                    or "$item_compass_token_darkgold")
-                {
-                    SetCompassActive(item.m_shared.m_name);
-                    break;
-                }
-                compassBarActive = false;
-                compassCircle = false;
-                barPinActive = false;
-                biomesName = false;
-                windIcon = false;
-            }
-        }
-        private static void SetCompassActive(string itemName)
-        {
             compassBarActive = false;
             compassCircle = false;
             barPinActive = false;
             biomesName = false;
             windIcon = false;
-            
-            if (itemName == "$item_compass_token_brass")
+            foreach (var item in equippedItems)
             {
-                compassCircle = true;
+                if (item.m_shared.m_name
+                    is not ("$item_compass_token_brass"
+                    or "$item_compass_token_gold"
+                    or "$item_compass_token_silver"
+                    or "$item_compass_token_darkgold")) continue;
+                SetCompassActive(item.m_shared.m_name);
+                break;
             }
-
-            if (itemName == "$item_compass_token_gold")
+        }
+        private static void SetCompassActive(string itemName)
+        {
+            switch (itemName)
             {
-                compassBarActive = true;
-            }
-
-            if (itemName == "$item_compass_token_silver")
-            {
-                compassCircle = true;
-                biomesName = true;
-                windIcon = true;
-            }
-
-            if (itemName == "$item_compass_token_darkgold")
-            {
-                compassBarActive = true;
-                barPinActive = true;
+                case "$item_compass_token_brass":
+                    compassCircle = true;
+                    break;
+                case "$item_compass_token_gold":
+                    compassBarActive = true;
+                    break;
+                case "$item_compass_token_silver":
+                    compassCircle = true;
+                    biomesName = true;
+                    windIcon = true;
+                    break;
+                case "$item_compass_token_darkgold":
+                    compassBarActive = true;
+                    barPinActive = true;
+                    break;
             }
         }
         private static void UpdateCompassBar()

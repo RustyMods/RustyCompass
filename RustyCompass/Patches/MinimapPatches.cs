@@ -3,7 +3,7 @@ using HarmonyLib;
 
 namespace RustyCompass.Patches;
 
-public class MinimapPatches
+public static class MinimapPatches
 {
     [HarmonyPatch(typeof(Minimap), nameof(Minimap.Awake))]
     public static class MinimapAwakePatch
@@ -28,7 +28,7 @@ public class MinimapPatches
         private static void Postfix(Minimap __instance)
         {
             if (!__instance || Player.m_localPlayer == null) return;
-            var icon = __instance.m_icons[3];
+            Minimap.SpriteData icon = __instance.m_icons[3];
 
             foreach (Minimap.PinData obj in MinimapAwakePatch.TempTamePins) __instance.RemovePin(obj);
             MinimapAwakePatch.TempTamePins.Clear();
