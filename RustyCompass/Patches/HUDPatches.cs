@@ -12,57 +12,35 @@ namespace RustyCompass.Patches;
 public static class HUDPatches
 {
     [HarmonyPatch(typeof(Hud), nameof(Hud.Awake))]
-    static class HudPatch
+    public static class HudPatch
     {
         public static TMP_FontAsset font = null!;
         private static GameObject root = null!;
         public static int compassIconCount;
-        public static Sprite fireIcon = null!;
-        public static Sprite shipIcon = null!;
-        public static Sprite playerIcon = null!;
-        public static Sprite spawnIcon = null!;
-        public static Sprite merchantIcon = null!;
-        public static Sprite clothIcon = null!;
-        public static Sprite houseIcon = null!;
-        public static Sprite anchorIcon = null!;
-        public static Sprite circleIcon = null!;
-        public static Sprite portalIcon = null!;
-        public static Sprite deathIcon = null!;
-        public static Sprite bedIcon = null!;
-        public static Sprite yellowTargetIcon = null!;
-        public static Sprite bossIcon = null!;
-        public static Sprite vikingIcon = null!;
-        public static Sprite exclamationIcon = null!;
-        public static Sprite redRadiusIcon = null!;
-        public static Sprite blueTargetIcon = null!;
-        public static Sprite questionMarkIcon = null!;
+        public static readonly Sprite fireIcon = Minimap.instance.m_icons[0].m_icon;
+        public static readonly Sprite shipIcon = Minimap.instance.m_largeShipMarker.GetComponent<Image>().sprite;
+        public static readonly Sprite playerIcon = Minimap.instance.m_largeMarker.GetComponent<Image>().sprite;
+        public static readonly Sprite spawnIcon = Minimap.instance.m_locationIcons[0].m_icon;
+        public static readonly Sprite merchantIcon = Minimap.instance.m_locationIcons[1].m_icon;
+        public static readonly Sprite clothIcon = Minimap.instance.m_locationIcons[2].m_icon;
+        public static readonly Sprite houseIcon = Minimap.instance.m_icons[1].m_icon;
+        public static readonly Sprite anchorIcon =  Minimap.instance.m_icons[2].m_icon;
+        public static readonly Sprite circleIcon = Minimap.instance.m_icons[3].m_icon;
+        public static readonly Sprite portalIcon = Minimap.instance.m_icons[4].m_icon;
+        public static readonly Sprite deathIcon = Minimap.instance.m_icons[5].m_icon;
+        public static readonly Sprite bedIcon = Minimap.instance.m_icons[6].m_icon;
+        public static readonly Sprite yellowTargetIcon = Minimap.instance.m_icons[7].m_icon;
+        public static readonly Sprite bossIcon = Minimap.instance.m_icons[8].m_icon;
+        public static readonly Sprite vikingIcon = Minimap.instance.m_icons[9].m_icon;
+        public static readonly Sprite exclamationIcon = Minimap.instance.m_icons[10].m_icon;
+        public static readonly Sprite redRadiusIcon = Minimap.instance.m_icons[11].m_icon;
+        public static readonly Sprite blueTargetIcon = Minimap.instance.m_icons[12].m_icon;
+        public static readonly Sprite questionMarkIcon = Minimap.instance.m_icons[13].m_icon;
         private static void Postfix(Hud __instance)
         {
             root = __instance.m_rootObject;
             font = root.transform.Find("staminapanel").Find("Stamina").Find("StaminaText")
                 .GetComponent<TextMeshProUGUI>().font;
-            
-            fireIcon = Minimap.instance.m_icons[0].m_icon;
-            houseIcon = Minimap.instance.m_icons[1].m_icon;
-
-            anchorIcon = Minimap.instance.m_icons[2].m_icon;
-            circleIcon = Minimap.instance.m_icons[3].m_icon;
-            portalIcon = Minimap.instance.m_icons[4].m_icon;
-            deathIcon = Minimap.instance.m_icons[5].m_icon;
-            bedIcon = Minimap.instance.m_icons[6].m_icon;
-            yellowTargetIcon = Minimap.instance.m_icons[7].m_icon;
-            bossIcon = Minimap.instance.m_icons[8].m_icon;
-            vikingIcon = Minimap.instance.m_icons[9].m_icon;
-            exclamationIcon = Minimap.instance.m_icons[10].m_icon;
-            redRadiusIcon = Minimap.instance.m_icons[11].m_icon;
-            blueTargetIcon = Minimap.instance.m_icons[12].m_icon;
-            questionMarkIcon = Minimap.instance.m_icons[13].m_icon;
-
-            shipIcon = Minimap.instance.m_largeShipMarker.GetComponent<Image>().sprite;
-            playerIcon = Minimap.instance.m_largeMarker.GetComponent<Image>().sprite;
-            spawnIcon = Minimap.instance.m_locationIcons[0].m_icon;
-            merchantIcon = Minimap.instance.m_locationIcons[1].m_icon;
-            clothIcon = Minimap.instance.m_locationIcons[2].m_icon;
 
             CreateCompassCircle();
             CreateCompassBar();
@@ -176,12 +154,12 @@ public static class HUDPatches
         private static GameObject root = null!;
         private static Quaternion playerRotation;
         private static Vector3 playerPosition;
-        private static List<Minimap.PinData> BarPins = new();
-        
+
+        private static List<PinData> BarPins = new();
+
         private static bool compassCircle;
         private static bool biomesName;
         private static bool windIcon;
-
         private static bool compassBarActive;
         private static bool barPinActive;
 
@@ -190,7 +168,7 @@ public static class HUDPatches
             root = __instance.m_rootObject;
             playerRotation = Utils.GetMainCamera().transform.rotation;
             playerPosition = Utils.GetMainCamera().transform.position;
-            
+
             UpdateCompassCircle();
             UpdateCompassBar();
             UpdateBarPins();
@@ -280,101 +258,98 @@ public static class HUDPatches
         {
             if (Camera.main == null || Player.m_localPlayer == null) return;
             
-            List<Minimap.PinData>? tempBarPins = UpdateBarTempPins();
-
-            if (tempBarPins == null) return;
-
-            try
+            List<PinData> latestPinData = GetLatestPinData();
+            
+            // Delete all pins
+            foreach (PinData pd in BarPins)
             {
-                float totalWidth = HudPatch.compassIconCount * RustyCompassPlugin._CompassBarIconSpacing.Value;
-                float distance = 360f;
-                float positionY = RustyCompassPlugin._CompassBarPosition.Value;
-                float maxDistance = RustyCompassPlugin._CompassPinsMaxDistance.Value;
-                float maxSize = RustyCompassPlugin._CompassPinsMaxSize.Value;
+                UnityEngine.Object.Destroy(pd.m_uiElement);
+            }
+            BarPins.Clear();
+            // Create new pins
+            foreach (var pinData in latestPinData)
+            {
+                GameObject newBarPin = CreateBarPin(pinData);
+                pinData.m_uiElement = newBarPin;
+                // Register new bar pin with ui element
+                BarPins.Add(pinData);
+            }
 
-                foreach (Minimap.PinData tempPins in tempBarPins)
+            float totalWidth = HudPatch.compassIconCount * RustyCompassPlugin._CompassBarIconSpacing.Value;
+            float distance = 360f;
+            float positionY = RustyCompassPlugin._CompassBarPosition.Value;
+            float maxDistance = RustyCompassPlugin._CompassPinsMaxDistance.Value;
+            float maxSize = RustyCompassPlugin._CompassPinsMaxSize.Value;
+
+            foreach (PinData pinData in BarPins)
+            {
+                Vector3 pinPos = pinData.m_pos;
+                Vector3 distanceFromPlayer = pinPos - playerPosition;
+                float totalDistance = (Vector3.Distance(playerPosition, pinPos));
+                float angle = Vector3.SignedAngle(
+                    playerRotation * Vector3.forward,
+                    distanceFromPlayer,
+                    Vector3.up
+                );
+                float positionX = ((angle % distance) / distance) * -totalWidth;
+
+                string name = pinData.m_name == "" ? pinData.m_icon.name : pinData.m_name;
+
+                GameObject pin = pinData.m_uiElement;
+
+                RectTransform rect = pin.GetComponent<RectTransform>();
+                Image pinImage = pin.GetComponent<Image>();
+                TextMeshProUGUI pinText = pin.transform.Find("text").GetComponent<TextMeshProUGUI>();
+                RectTransform textRect = pin.transform.Find("text").GetComponent<RectTransform>();
+
+                // Set values
+                rect.anchoredPosition = new Vector2(positionX, positionY);
+                pinImage.color = RustyCompassPlugin._CompassPinsColor.Value;
+                name = name switch
                 {
-                    Minimap.PinData pinData = tempPins;
-                    Vector3 pinPos = pinData.m_pos;
-                    Vector3 distanceFromPlayer = pinPos - playerPosition;
-                    float totalDistance = (Vector3.Distance(playerPosition, pinPos));
-                    float angle = Vector3.SignedAngle(
-                        playerRotation * Vector3.forward,
-                        distanceFromPlayer,
-                        Vector3.up
+                    "mapicon_trader" => "$rusty_compass_haldor",
+                    "mapicon_start" => "$rusty_compass_spawn",
+                    "mapicon_hildir" => "$rusty_compass_hildir",
+                    _ => name
+                };
+                string localizedName = Localization.instance.Localize(name);
+                pinText.text = $"{localizedName} (<color=orange>{Mathf.Round(totalDistance)}</color>)";
+
+                if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
+                {
+                    pin.SetActive(
+                        totalDistance < maxDistance
+                        &&
+                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
+                        && 
+                        barPinActive
                     );
-                    float positionX = ((angle % distance) / distance) * -totalWidth;
-
-                    string name = pinData.m_name == "" ? pinData.m_icon.name : pinData.m_name;
-
-                    GameObject pin = BarPins.Contains(pinData) ? root.transform.Find($"BarPin ({pinPos.x}{pinPos.y}{pinPos.z})").gameObject : CreateBarPin(pinData);
-                    
-                    RectTransform rect = pin.GetComponent<RectTransform>();
-                    Image pinImage = pin.GetComponent<Image>();
-                    TextMeshProUGUI pinText = pin.transform.Find("text").GetComponent<TextMeshProUGUI>();
-                    RectTransform textRect = pin.transform.Find("text").GetComponent<RectTransform>();
-
-                    // Set values
-                    rect.anchoredPosition = new Vector2(positionX, positionY);
-                    pinImage.color = RustyCompassPlugin._CompassPinsColor.Value;
-                    name = name switch
-                    {
-                        "mapicon_trader" => "$rusty_compass_haldor",
-                        "mapicon_start" => "$rusty_compass_spawn",
-                        "mapicon_hildir" => "$rusty_compass_hildr",
-                        _ => name
-                    };
-                    pinText.text = Localization.instance.Localize(name);
-
-                    if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
-                    {
-                        pin.SetActive(
-                            totalDistance < maxDistance
-                            &&
-                            RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
-                            && 
-                            barPinActive
-                        );
-                    }
-                    else
-                    {
-                        pin.SetActive(
-                            totalDistance < maxDistance 
-                            && 
-                            RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.On
-                            &&
-                            RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
-                            &&
-                            RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
-                        );
-                    }
-                    
-                    // Set size of pin
-                    float percentage = maxSize / totalDistance;
-                    float size = maxSize * percentage;
-                    size = Mathf.Clamp(size, 5f, 50f);
-                    
-                    rect.sizeDelta = new Vector2(size, size);
-                    textRect.sizeDelta = new Vector2(100f * percentage, 25f * percentage);
                 }
-                // Find differences between temp pins and loaded pins
-                List<Minimap.PinData> LoadedBarPins = new List<Minimap.PinData>(BarPins);
-                IEnumerable<Minimap.PinData> differences = BarPins.Except(tempBarPins);
-                foreach (Minimap.PinData difference in differences)
+                else
                 {
-                    Vector3 pos = difference.m_pos;
-                    GameObject? differentPin = root.transform.Find($"BarPin ({pos.x}{pos.y}{pos.z})").gameObject;
-                    if (differentPin == null) continue;
-                    UnityEngine.Object.Destroy(differentPin);
-                    LoadedBarPins.Remove(difference);
+                    pin.SetActive(
+                        totalDistance < maxDistance 
+                        && 
+                        RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.On
+                        &&
+                        RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
+                        &&
+                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
+                    );
                 }
-
-                BarPins = LoadedBarPins;
                 
-            } catch (NullReferenceException) {}
+                // Set size of pin
+                float percentage = maxSize / totalDistance;
+                float size = maxSize * percentage;
+                size = Mathf.Clamp(size, 5f, maxSize);
+                
+                rect.sizeDelta = new Vector2(size, size);
+                textRect.sizeDelta = new Vector2(100f * percentage, 25f * percentage);
+            }
+            
         }
 
-        private static GameObject CreateBarPin(Minimap.PinData pinData)
+        private static GameObject CreateBarPin(PinData pinData)
         {
             string name = pinData.m_name == "" ? pinData.m_icon.name : pinData.m_name;
             Vector3 pos = pinData.m_pos;
@@ -429,21 +404,20 @@ public static class HUDPatches
             textMesh.richText = true;
             
             textMesh.text = Localization.instance.Localize(name);
-
-            BarPins.Add(pinData);
+            
             newPin.SetActive(false);
 
             return newPin;
         }
-
-        private static List<Minimap.PinData>? UpdateBarTempPins()
+        
+        private static List<PinData> GetLatestPinData()
         {
-            List<Minimap.PinData> tempBarPins = new List<Minimap.PinData>();
+            List<Minimap.PinData> minimapPins = new List<Minimap.PinData>();
             // custom player pins
             List<ZNet.PlayerInfo> playerInfo = Minimap.instance.m_tempPlayerInfo; 
             for (int i = 0; i < playerInfo.Count; ++i)
             {
-                var info = playerInfo[i];
+                ZNet.PlayerInfo info = playerInfo[i];
                 Minimap.PinData playerPinData = new Minimap.PinData()
                 {
                     m_name = info.m_name,
@@ -454,14 +428,14 @@ public static class HUDPatches
                     m_pos = info.m_position,
                     m_ownerID = 0L,
                 };
-                tempBarPins.Add(playerPinData);
+                minimapPins.Add(playerPinData);
             }
-            // possibly all pins ??
+            // possibly all pins ?? definitely tame pins 
             List<Minimap.PinData> pins = Minimap.instance.m_pins;
             for (int i = 0; i < pins.Count; ++i)
             {
-                var info = pins[i];
-                var type = info.m_type;
+                Minimap.PinData info = pins[i];
+                Minimap.PinType type = info.m_type;
                 if (type
                     is Minimap.PinType.EventArea
                     or Minimap.PinType.Shout
@@ -469,45 +443,69 @@ public static class HUDPatches
                     or Minimap.PinType.Ping
                     // or Minimap.PinType.Player
                    ) continue;
-                tempBarPins.Add(info);
+                minimapPins.Add(info);
             }
             // locations ex: haldor
             Dictionary<Vector3, Minimap.PinData> locationPins = Minimap.instance.m_locationPins; 
             List<KeyValuePair<Vector3,Minimap.PinData>> locationPinsList = locationPins.ToList();
-            for (int i = 0; i < locationPinsList.Count; ++i)
+            foreach (KeyValuePair<Vector3, Minimap.PinData> locationPin in locationPinsList)
             {
-                var info = locationPinsList[i].Value;
-                tempBarPins.Add(info);
+                Minimap.PinData info = locationPin.Value;
+                minimapPins.Add(info);
             }
             // Possible players ??
             List<Minimap.PinData> playerPins = Minimap.instance.m_playerPins;
             for (int i = 0; i < playerPins.Count; ++i)
             {
-                var info = playerPins[i];
-                var type = info.m_type;
+                Minimap.PinData info = playerPins[i];
+                Minimap.PinType type = info.m_type;
                 if (type is Minimap.PinType.None
                     or Minimap.PinType.Ping
                     or Minimap.PinType.Shout
                     or Minimap.PinType.EventArea
-                    or Minimap.PinType.RandomEvent) continue;
-                tempBarPins.Add(info);
+                    or Minimap.PinType.RandomEvent
+                    // or Minimap.PinType.Player
+                    ) continue;
+                minimapPins.Add(info);
             }
+            
+            
             // Validate pin data
-            List<Minimap.PinData> outputList = new();
-
-            foreach (var pin in tempBarPins)
+            List<PinData> outputList = new List<PinData>();
+            foreach (var pin in minimapPins)
             {
-                if (string.IsNullOrEmpty(pin.m_name) && pin.m_icon.name is "mapicon_start" or "mapicon_trader" or "mapicon_hildir")
+                PinData newPinData = new PinData()
                 {
-                    outputList.Add(pin);
+                    m_name = pin.m_name,
+                    m_type = pin.m_type,
+                    m_pos = pin.m_pos,
+                    m_icon = pin.m_icon
+                };
+                if (string.IsNullOrEmpty(pin.m_name) 
+                    && pin.m_icon.name 
+                        is "mapicon_start" 
+                        or "mapicon_trader" 
+                        or "mapicon_hildir"
+                    )
+                {
+                    newPinData.m_name = pin.m_icon.name;
+                    outputList.Add(newPinData);
                 }
                 else if (!string.IsNullOrEmpty(pin.m_name))
                 {
-                    outputList.Add(pin);
+                    outputList.Add(newPinData);
                 }
             }
-            
+
             return outputList;
+        }
+        private class PinData
+        {
+            public string m_name = null!;
+            public Sprite m_icon = null!;
+            public GameObject m_uiElement = null!;
+            public Minimap.PinType m_type;
+            public Vector3 m_pos;
         }
         private static void UpdateCompassCircle()
         {
