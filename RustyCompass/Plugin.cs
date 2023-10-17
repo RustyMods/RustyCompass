@@ -19,7 +19,7 @@ namespace RustyCompass
     public class RustyCompassPlugin : BaseUnityPlugin
     {
         internal const string ModName = "RustyCompass";
-        internal const string ModVersion = "1.0.5";
+        internal const string ModVersion = "1.0.6";
         internal const string Author = "RustyMods";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -90,7 +90,14 @@ namespace RustyCompass
 
             _useCompassTokens = config("1 - General Settings", "Use Compass Tokens", Toggle.Off,
                 "If on, compass features are enabled using quest items", true);
-
+            
+            _CompassPinsEnabled = config("1 - General Settings", "Pins Enabled", Toggle.On,
+                "If on, pins are added to the compass bar", true);
+            
+            _CompassPinsMaxDistance = config("1 - General Settings", "Bar Pins Max Distance", 100f,
+                "Max distance pins appear on bar", false);
+            
+            // Circle Compass Settings
             Vector2 defaultPos = new Vector2(820f, 400f);
             _CompassPosition = config(
                 "2 - Circle Compass Settings",
@@ -144,7 +151,11 @@ namespace RustyCompass
                 "Compass sprite options",
                 false
                 );
-
+            _CirclePinsColor = config("2 - Circle Compass Settings", "Pin Color", Color.white,
+                "Set the colors of the pins", false);
+            _CirclePinsMaxSize = config("2 - Circle Compass Settings", "Pin Size", 30f,
+                "Pin size for the circle compass", false);
+            // Bar Compass Settings
             _CompassBarColor = config(
                 "3 - Bar Compass Settings", "Compass Bar Color",
                 Color.white, "Compass Bar Color", false
@@ -162,10 +173,7 @@ namespace RustyCompass
 
             _CompassPinsColor = config("3 - Bar Compass Settings", "Compass Pins Color", Color.white,
                 "Color of the pins on the bar", false);
-            _CompassPinsEnabled = config("3 - Bar Compass Settings", "Bar Pins Enabled", Toggle.On,
-                "If on, pins are added to the compass bar", true);
-            _CompassPinsMaxDistance = config("3 - Bar Compass Settings", "Bar Pins Max Distance", 500f,
-                "Max distance pins appear on bar", false);
+            
             _CompassPinsMaxSize = config("3 - Bar Compass Settings", "Bar Pins Max Size", 50f,
                 "Size of compass bar pins", false);
 
@@ -324,7 +332,9 @@ namespace RustyCompass
         public static ConfigEntry<Toggle> _isModActive = null!;
         public static ConfigEntry<CompassType> _CompassType = null!;
         public static ConfigEntry<Toggle> _useCompassTokens = null!;
-
+        public static ConfigEntry<float> _CompassPinsMaxDistance = null!;
+        public static ConfigEntry<Toggle> _CompassPinsEnabled = null!;
+        
         // Circle Compass Settings
         public static ConfigEntry<Color> _BiomesColor = null!;
         public static ConfigEntry<Color> _CompassColor = null!;
@@ -333,15 +343,15 @@ namespace RustyCompass
         public static ConfigEntry<Vector2> _CompassSize = null!;
         public static ConfigEntry<Color> _HandColor = null!;
         public static ConfigEntry<Color> _WindMarkerColor = null!;
+        public static ConfigEntry<Color> _CirclePinsColor = null!;
+        public static ConfigEntry<float> _CirclePinsMaxSize = null!;
+
         // Bar Compass Settings
         public static ConfigEntry<Color> _CompassBarColor = null!;
         public static ConfigEntry<Vector2> _CompassBarIconSize = null!;
         public static ConfigEntry<float> _CompassBarIconSpacing = null!;
         public static ConfigEntry<float> _CompassBarPosition = null!;
-
         public static ConfigEntry<Color> _CompassPinsColor = null!;
-        public static ConfigEntry<Toggle> _CompassPinsEnabled = null!;
-        public static ConfigEntry<float> _CompassPinsMaxDistance = null!;
         public static ConfigEntry<float> _CompassPinsMaxSize = null!;
         
         // Tame Tracker Settings

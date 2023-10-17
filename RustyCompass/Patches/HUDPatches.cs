@@ -18,8 +18,8 @@ public static class HUDPatches
         private static GameObject root = null!;
         public static int compassIconCount;
         public static readonly Sprite fireIcon = Minimap.instance.m_icons[0].m_icon;
-        public static readonly Sprite shipIcon = Minimap.instance.m_largeShipMarker.GetComponent<Image>().sprite;
-        public static readonly Sprite playerIcon = Minimap.instance.m_largeMarker.GetComponent<Image>().sprite;
+        // public static readonly Sprite shipIcon = Minimap.instance.m_largeShipMarker.GetComponent<Image>().sprite;
+        // public static readonly Sprite playerIcon = Minimap.instance.m_largeMarker.GetComponent<Image>().sprite;
         public static readonly Sprite spawnIcon = Minimap.instance.m_locationIcons[0].m_icon;
         public static readonly Sprite merchantIcon = Minimap.instance.m_locationIcons[1].m_icon;
         public static readonly Sprite clothIcon = Minimap.instance.m_locationIcons[2].m_icon;
@@ -33,7 +33,7 @@ public static class HUDPatches
         public static readonly Sprite bossIcon = Minimap.instance.m_icons[8].m_icon;
         public static readonly Sprite vikingIcon = Minimap.instance.m_icons[9].m_icon;
         public static readonly Sprite exclamationIcon = Minimap.instance.m_icons[10].m_icon;
-        public static readonly Sprite redRadiusIcon = Minimap.instance.m_icons[11].m_icon;
+        // public static readonly Sprite redRadiusIcon = Minimap.instance.m_icons[11].m_icon;
         public static readonly Sprite blueTargetIcon = Minimap.instance.m_icons[12].m_icon;
         public static readonly Sprite questionMarkIcon = Minimap.instance.m_icons[13].m_icon;
         private static void Postfix(Hud __instance)
@@ -48,6 +48,13 @@ public static class HUDPatches
         
         private static void CreateCompassBar()
         {
+            if (RustyCompassPlugin.RuneIcon == null
+                || RustyCompassPlugin.SouthIcon == null
+                || RustyCompassPlugin.EastIcon == null
+                || RustyCompassPlugin.NorthIcon == null
+                || RustyCompassPlugin.WestIcon == null
+                ) return;
+            
             List<Sprite> compassIcons = new List<Sprite>()
             {
                 RustyCompassPlugin.SouthIcon,
@@ -68,7 +75,7 @@ public static class HUDPatches
                 RustyCompassPlugin.RuneIcon,
             };
             compassIconCount = compassIcons.Count;
-            
+                
             float positionY = RustyCompassPlugin._CompassBarPosition.Value;
             float iconSpacing = RustyCompassPlugin._CompassBarIconSpacing.Value;
 
@@ -155,13 +162,15 @@ public static class HUDPatches
         private static Quaternion playerRotation;
         private static Vector3 playerPosition;
 
-        private static List<PinData> BarPins = new();
+        private static readonly List<PinData> BarPins = new();
+        private static readonly List<PinData> CirclePins = new();
 
         private static bool compassCircle;
         private static bool biomesName;
         private static bool windIcon;
         private static bool compassBarActive;
         private static bool barPinActive;
+        private static bool circlePinActive;
 
         static void Postfix(Hud __instance)
         {
@@ -171,7 +180,7 @@ public static class HUDPatches
 
             UpdateCompassCircle();
             UpdateCompassBar();
-            UpdateBarPins();
+            UpdatePins();
             if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On) CheckPlayerInventory();
         }
 
@@ -184,6 +193,7 @@ public static class HUDPatches
             barPinActive = false;
             biomesName = false;
             windIcon = false;
+            circlePinActive = false;
             foreach (var item in equippedItems)
             {
                 if (item.m_shared.m_name
@@ -209,6 +219,7 @@ public static class HUDPatches
                     compassCircle = true;
                     biomesName = true;
                     windIcon = true;
+                    circlePinActive = true;
                     break;
                 case "$item_compass_token_darkgold":
                     compassBarActive = true;
@@ -226,8 +237,11 @@ public static class HUDPatches
             for (int i = 0; i < HudPatch.compassIconCount; ++i)
             {
                 Transform iconElement = root.transform.Find($"barIcon ({i})");
-                RectTransform iconRect = iconElement.GetComponent<RectTransform>();
-                Image iconImage = iconElement.GetComponent<Image>();
+                
+                iconElement.TryGetComponent(out RectTransform iconRect);
+                iconElement.TryGetComponent(out Image iconImage);
+
+                if (!iconRect || !iconImage) return;
 
                 float normalizedRotation = (cameraRotationY + i * (distance / HudPatch.compassIconCount)) % distance;
                 float positionX = (normalizedRotation / distance) * totalWidth - totalWidth / 2;
@@ -237,116 +251,176 @@ public static class HUDPatches
                 iconRect.anchoredPosition = new Vector2(positionX, positionY);
                 iconImage.color = RustyCompassPlugin._CompassBarColor.Value;
                 // Enable/Disable
-                if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
-                {
-                    iconElement.gameObject.SetActive(
-                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
-                        && compassBarActive
-                    );
-                }
-                else
-                {
-                    iconElement.gameObject.SetActive(
-                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On 
-                        && RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
-                        );
-                }
+                iconElement.gameObject.SetActive(
+                    RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On &&
+                    (
+                        (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On && compassBarActive) ||
+                        (RustyCompassPlugin._useCompassTokens.Value != RustyCompassPlugin.Toggle.On &&
+                         RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar)
+                    )
+                );
             }
         }
 
-        private static void UpdateBarPins()
+        private static void UpdatePins()
         {
             if (Camera.main == null || Player.m_localPlayer == null) return;
             
+            Transform compassContainer = root.transform.Find("CompassContainer");
+            Transform barCompassIcon0 = root.transform.Find($"barIcon (0)");
             List<PinData> latestPinData = GetLatestPinData();
             
             // Delete all pins
-            foreach (PinData pd in BarPins)
-            {
-                UnityEngine.Object.Destroy(pd.m_uiElement);
-            }
+            foreach (PinData pd in BarPins) UnityEngine.Object.Destroy(pd.m_uiElement);
+            foreach (PinData cpd in CirclePins) UnityEngine.Object.Destroy(cpd.m_uiElement);
+            // Clear pin lists
             BarPins.Clear();
-            // Create new pins
-            foreach (var pinData in latestPinData)
-            {
-                GameObject newBarPin = CreateBarPin(pinData);
-                pinData.m_uiElement = newBarPin;
-                // Register new bar pin with ui element
-                BarPins.Add(pinData);
-            }
-
-            float totalWidth = HudPatch.compassIconCount * RustyCompassPlugin._CompassBarIconSpacing.Value;
-            float distance = 360f;
-            float positionY = RustyCompassPlugin._CompassBarPosition.Value;
-            float maxDistance = RustyCompassPlugin._CompassPinsMaxDistance.Value;
-            float maxSize = RustyCompassPlugin._CompassPinsMaxSize.Value;
-
-            foreach (PinData pinData in BarPins)
-            {
-                Vector3 pinPos = pinData.m_pos;
-                Vector3 distanceFromPlayer = pinPos - playerPosition;
-                float totalDistance = (Vector3.Distance(playerPosition, pinPos));
-                float angle = Vector3.SignedAngle(
-                    playerRotation * Vector3.forward,
-                    distanceFromPlayer,
-                    Vector3.up
-                );
-                float positionX = ((angle % distance) / distance) * -totalWidth;
-
-                string name = pinData.m_name == "" ? pinData.m_icon.name : pinData.m_name;
-
-                GameObject pin = pinData.m_uiElement;
-
-                RectTransform rect = pin.GetComponent<RectTransform>();
-                Image pinImage = pin.GetComponent<Image>();
-                TextMeshProUGUI pinText = pin.transform.Find("text").GetComponent<TextMeshProUGUI>();
-                RectTransform textRect = pin.transform.Find("text").GetComponent<RectTransform>();
-
-                // Set values
-                rect.anchoredPosition = new Vector2(positionX, positionY);
-                pinImage.color = RustyCompassPlugin._CompassPinsColor.Value;
-                name = name switch
-                {
-                    "mapicon_trader" => "$rusty_compass_haldor",
-                    "mapicon_start" => "$rusty_compass_spawn",
-                    "mapicon_hildir" => "$rusty_compass_hildir",
-                    _ => name
-                };
-                string localizedName = Localization.instance.Localize(name);
-                pinText.text = $"{localizedName} (<color=orange>{Mathf.Round(totalDistance)}</color>)";
-
-                if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
-                {
-                    pin.SetActive(
-                        totalDistance < maxDistance
-                        &&
-                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
-                        && 
-                        barPinActive
-                    );
-                }
-                else
-                {
-                    pin.SetActive(
-                        totalDistance < maxDistance 
-                        && 
-                        RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.On
-                        &&
-                        RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar
-                        &&
-                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
-                    );
-                }
-                
-                // Set size of pin
-                float percentage = maxSize / totalDistance;
-                float size = maxSize * percentage;
-                size = Mathf.Clamp(size, 5f, maxSize);
-                
-                rect.sizeDelta = new Vector2(size, size);
-                textRect.sizeDelta = new Vector2(100f * percentage, 25f * percentage);
-            }
+            CirclePins.Clear();
             
+            // General Settings
+            float maxDistance = RustyCompassPlugin._CompassPinsMaxDistance.Value;
+            
+            if (compassContainer.gameObject.activeInHierarchy)
+            {
+                if (RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.Off) return;
+                // Create new circle pins
+                foreach (PinData pinData in latestPinData)
+                {
+                    GameObject newCirclePin = CreateCirclePin(pinData);
+                    pinData.m_uiElement = newCirclePin;
+                    CirclePins.Add(pinData);
+                }
+                // Iterate through circle pins and set data
+                foreach (PinData pinData in CirclePins)
+                {
+                    Vector3 pinPos = pinData.m_pos;
+                    Vector3 distanceFromPlayer = pinPos - playerPosition;
+                    float totalDistance = (Vector3.Distance(playerPosition, pinPos));
+                    float maxSize = RustyCompassPlugin._CirclePinsMaxSize.Value;
+                    
+                    string name = pinData.m_name == "" ? pinData.m_icon.name : pinData.m_name;
+                    name = name switch
+                    {
+                        "mapicon_trader" => "$rusty_compass_haldor",
+                        "mapicon_start" => "$rusty_compass_spawn",
+                        "mapicon_hildir" => "$rusty_compass_hildir",
+                        _ => name
+                    };
+                    string localizedName = Localization.instance.Localize(name);
+
+                    GameObject pin = pinData.m_uiElement;
+                    Transform pinText = pin.transform.Find("text");
+                    
+                    pin.TryGetComponent(out RectTransform rect);
+                    pin.TryGetComponent(out Image pinImage);
+                    pinText.TryGetComponent(out TextMeshProUGUI textMesh);
+                    pinText.TryGetComponent(out RectTransform textRect);
+                    if (!rect || !pinImage || !textMesh || !textRect) return;
+                    
+                    // Set values
+                    rect.anchoredPosition = new Vector2(distanceFromPlayer.x, distanceFromPlayer.z);
+                    pinImage.color = RustyCompassPlugin._CirclePinsColor.Value;
+                    
+                    textMesh.text = $"{localizedName} (<color=orange>{Mathf.Round(totalDistance)}</color>)";
+                    
+                    // Set size of pin
+                    float percentage = maxSize / totalDistance;
+                    float size = maxSize * percentage;
+                    size = Mathf.Clamp(size, 5f, maxSize);
+                    
+                    rect.sizeDelta = new Vector2(size, size);
+                    textRect.sizeDelta = new Vector2(100f * percentage, 25f * percentage);
+                    
+                    // Use Token feature ??
+                    pin.SetActive(
+                        totalDistance < maxDistance &&
+                        RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.On &&
+                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On &&
+                        (
+                            (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On && 
+                             circlePinActive) 
+                            ||
+                            (RustyCompassPlugin._useCompassTokens.Value != RustyCompassPlugin.Toggle.On && 
+                             RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Circle)
+                        )
+                    );
+                }
+            }
+
+            if (barCompassIcon0.gameObject.activeInHierarchy)
+            {
+                if (RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.Off) return;
+                // Create new bar pins
+                foreach (var pinData in latestPinData)
+                {
+                    GameObject newBarPin = CreateBarPin(pinData);
+                    pinData.m_uiElement = newBarPin;
+                    // Register new bar pin with ui element
+                    BarPins.Add(pinData);
+                }
+                
+                float totalWidth = HudPatch.compassIconCount * RustyCompassPlugin._CompassBarIconSpacing.Value;
+                float distance = 360f;
+                float positionY = RustyCompassPlugin._CompassBarPosition.Value;
+                float maxSize = RustyCompassPlugin._CompassPinsMaxSize.Value;
+                // Iterate through bar pins and set data
+                foreach (PinData pinData in BarPins)
+                {
+                    Vector3 pinPos = pinData.m_pos;
+                    Vector3 distanceFromPlayer = pinPos - playerPosition;
+                    float totalDistance = (Vector3.Distance(playerPosition, pinPos));
+                    float angle = Vector3.SignedAngle(
+                        playerRotation * Vector3.forward,
+                        distanceFromPlayer,
+                        Vector3.up
+                    );
+                    float positionX = ((angle % distance) / distance) * -totalWidth;
+
+                    string name = pinData.m_name == "" ? pinData.m_icon.name : pinData.m_name;
+                    name = name switch
+                    {
+                        "mapicon_trader" => "$rusty_compass_haldor",
+                        "mapicon_start" => "$rusty_compass_spawn",
+                        "mapicon_hildir" => "$rusty_compass_hildir",
+                        _ => name
+                    };
+                    string localizedName = Localization.instance.Localize(name);
+                    
+                    GameObject pin = pinData.m_uiElement;
+                    Transform pinText = pin.transform.Find("text");
+
+                    pin.TryGetComponent(out RectTransform rect);
+                    pin.TryGetComponent(out Image pinImage);
+                    pinText.TryGetComponent(out TextMeshProUGUI textMesh);
+                    pinText.TryGetComponent(out RectTransform textRect);
+                    if (!rect || !pinImage || !textMesh || !textRect) return;
+                    
+                    // Set values
+                    rect.anchoredPosition = new Vector2(positionX, positionY);
+                    pinImage.color = RustyCompassPlugin._CompassPinsColor.Value;
+                    textMesh.text = $"{localizedName} (<color=orange>{Mathf.Round(totalDistance)}</color>)";
+                    
+                    // Set size of pin
+                    float percentage = maxSize / totalDistance;
+                    float size = maxSize * percentage;
+                    size = Mathf.Clamp(size, 5f, maxSize);
+                    
+                    rect.sizeDelta = new Vector2(size, size);
+                    textRect.sizeDelta = new Vector2(100f * percentage, 25f * percentage);
+                    
+                    // Use Token feature ??
+                    pin.SetActive(
+                        totalDistance < maxDistance &&
+                        RustyCompassPlugin._CompassPinsEnabled.Value == RustyCompassPlugin.Toggle.On &&
+                        RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On &&
+                        (
+                            (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On && barPinActive) ||
+                            (RustyCompassPlugin._useCompassTokens.Value != RustyCompassPlugin.Toggle.On &&
+                             RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Bar)
+                        )
+                    );
+                }
+            }
         }
 
         private static GameObject CreateBarPin(PinData pinData)
@@ -374,6 +448,10 @@ public static class HUDPatches
                 Minimap.PinType.Hildir1 => HudPatch.questionMarkIcon,
                 Minimap.PinType.Hildir2 => HudPatch.questionMarkIcon,
                 Minimap.PinType.Hildir3 => HudPatch.questionMarkIcon,
+                Minimap.PinType.Ping => HudPatch.blueTargetIcon,
+                Minimap.PinType.Shout => HudPatch.yellowTargetIcon,
+                Minimap.PinType.EventArea => HudPatch.exclamationIcon,
+                Minimap.PinType.RandomEvent => HudPatch.exclamationIcon,
                 _ => HudPatch.circleIcon
             };
 
@@ -410,14 +488,82 @@ public static class HUDPatches
             return newPin;
         }
         
+        private static GameObject CreateCirclePin(PinData pinData)
+        {
+            Transform compassContainer = root.transform.Find("CompassContainer");
+            Transform background = compassContainer.Find("background");
+            
+            string name = pinData.m_name == "" ? pinData.m_icon.name : pinData.m_name;
+            Vector3 pos = pinData.m_pos;
+            
+            GameObject newPin = new GameObject($"CirclePin ({pos.x}{pos.y}{pos.z})");
+            RectTransform rect = newPin.AddComponent<RectTransform>();
+            rect.SetParent(background);
+            rect.anchoredPosition = new Vector2(0f, 0f);
+            rect.sizeDelta = new Vector2(50f, 50f);
+
+            Image image = newPin.AddComponent<Image>();
+            image.sprite = pinData.m_type switch
+            {
+                Minimap.PinType.Boss => HudPatch.bossIcon,
+                Minimap.PinType.Player => HudPatch.vikingIcon,
+                Minimap.PinType.Death => HudPatch.deathIcon,
+                Minimap.PinType.Bed => HudPatch.bedIcon,
+                Minimap.PinType.Icon0 => HudPatch.fireIcon,
+                Minimap.PinType.Icon1 => HudPatch.houseIcon,
+                Minimap.PinType.Icon2 => HudPatch.anchorIcon,
+                Minimap.PinType.Icon3 => HudPatch.circleIcon,
+                Minimap.PinType.Icon4 => HudPatch.portalIcon,
+                Minimap.PinType.Hildir1 => HudPatch.questionMarkIcon,
+                Minimap.PinType.Hildir2 => HudPatch.questionMarkIcon,
+                Minimap.PinType.Hildir3 => HudPatch.questionMarkIcon,
+                Minimap.PinType.Ping => HudPatch.blueTargetIcon,
+                Minimap.PinType.Shout => HudPatch.yellowTargetIcon,
+                Minimap.PinType.EventArea => HudPatch.exclamationIcon,
+                Minimap.PinType.RandomEvent => HudPatch.exclamationIcon,
+                _ => HudPatch.circleIcon
+            };
+
+            image.sprite = pinData.m_icon.name switch
+            {
+                "mapicon_start" => HudPatch.spawnIcon,
+                "mapicon_trader" => HudPatch.merchantIcon,
+                "mapicon_hildir" => HudPatch.clothIcon,
+                _ => image.sprite
+            };
+            image.color = Color.white;
+
+            GameObject pinText = new GameObject("text");
+            RectTransform textRect = pinText.AddComponent<RectTransform>();
+            textRect.SetParent(newPin.transform);
+            textRect.anchoredPosition = new Vector2(0f, -25f);
+            textRect.sizeDelta = new Vector2(100f, 25f);
+
+            TextMeshProUGUI textMesh = pinText.AddComponent<TextMeshProUGUI>();
+            textMesh.font = HudPatch.font;
+            textMesh.fontSize = 15f;
+            textMesh.fontSizeMax = 15f;
+            textMesh.fontSizeMin = 5f;
+            textMesh.enableAutoSizing = true;
+            textMesh.color = Color.white;
+            textMesh.horizontalAlignment = HorizontalAlignmentOptions.Center;
+            textMesh.verticalAlignment = VerticalAlignmentOptions.Middle;
+            textMesh.richText = true;
+            
+            textMesh.text = Localization.instance.Localize(name);
+            
+            newPin.SetActive(false);
+
+            return newPin;
+        }
+        
         private static List<PinData> GetLatestPinData()
         {
             List<Minimap.PinData> minimapPins = new List<Minimap.PinData>();
             // custom player pins
             List<ZNet.PlayerInfo> playerInfo = Minimap.instance.m_tempPlayerInfo; 
-            for (int i = 0; i < playerInfo.Count; ++i)
+            foreach (ZNet.PlayerInfo info in playerInfo)
             {
-                ZNet.PlayerInfo info = playerInfo[i];
                 Minimap.PinData playerPinData = new Minimap.PinData()
                 {
                     m_name = info.m_name,
@@ -432,16 +578,12 @@ public static class HUDPatches
             }
             // possibly all pins ?? definitely tame pins 
             List<Minimap.PinData> pins = Minimap.instance.m_pins;
-            for (int i = 0; i < pins.Count; ++i)
+            foreach (Minimap.PinData info in pins)
             {
-                Minimap.PinData info = pins[i];
                 Minimap.PinType type = info.m_type;
                 if (type
                     is Minimap.PinType.EventArea
-                    or Minimap.PinType.Shout
                     or Minimap.PinType.RandomEvent
-                    or Minimap.PinType.Ping
-                    // or Minimap.PinType.Player
                    ) continue;
                 minimapPins.Add(info);
             }
@@ -455,20 +597,15 @@ public static class HUDPatches
             }
             // Possible players ??
             List<Minimap.PinData> playerPins = Minimap.instance.m_playerPins;
-            for (int i = 0; i < playerPins.Count; ++i)
+            foreach (Minimap.PinData info in playerPins)
             {
-                Minimap.PinData info = playerPins[i];
                 Minimap.PinType type = info.m_type;
                 if (type is Minimap.PinType.None
-                    or Minimap.PinType.Ping
-                    or Minimap.PinType.Shout
                     or Minimap.PinType.EventArea
                     or Minimap.PinType.RandomEvent
-                    // or Minimap.PinType.Player
-                    ) continue;
+                   ) continue;
                 minimapPins.Add(info);
             }
-            
             
             // Validate pin data
             List<PinData> outputList = new List<PinData>();
@@ -509,22 +646,25 @@ public static class HUDPatches
         }
         private static void UpdateCompassCircle()
         {
-            var compassContainer = root.transform.Find("CompassContainer");
-            var background = compassContainer.Find("background");
-            var hand = compassContainer.Find("hand");
-            var biomes = compassContainer.transform.Find("biomes");
-            var windMarker = compassContainer.Find("windMarker");
-
-            RectTransform compassRect = compassContainer.GetComponent<RectTransform>();
-            RectTransform backgroundRect = background.GetComponent<RectTransform>();
-            Image backgroundImage = background.GetComponent<Image>();
-            Image handImage = hand.GetComponent<Image>();
-            TextMeshProUGUI biomesText = biomes.GetComponent<TextMeshProUGUI>();
-            Image windMarkerImage = windMarker.GetComponent<Image>();
+            Transform compassContainer = root.transform.Find("CompassContainer");
+            Transform background = compassContainer.Find("background");
+            Transform hand = compassContainer.Find("hand");
+            Transform biomes = compassContainer.transform.Find("biomes");
+            Transform windMarker = compassContainer.Find("windMarker");
             
-            // Set container
+            compassContainer.TryGetComponent(out RectTransform compassRect);
+            background.TryGetComponent(out RectTransform backgroundRect);
+            background.TryGetComponent(out Image backgroundImage);
+            hand.TryGetComponent(out Image handImage);
+            biomes.TryGetComponent(out TextMeshProUGUI biomesText);
+            windMarker.TryGetComponent(out Image windMarkerImage);
+
+            if (!compassRect || !backgroundRect || !backgroundImage || !handImage || !biomesText ||
+                !windMarkerImage) return;
+            
+            // Set container position
             compassRect.anchoredPosition = RustyCompassPlugin._CompassPosition.Value;
-            // Set compass background
+            // Set compass settings
             backgroundRect.sizeDelta = RustyCompassPlugin._CompassSize.Value;
             backgroundImage.color = RustyCompassPlugin._CompassColor.Value;
             backgroundImage.sprite = RustyCompassPlugin._CompassSprite.Value switch
@@ -537,9 +677,9 @@ public static class HUDPatches
             };
             // Set compass rotation based on camera rotation
             background.rotation = Quaternion.Euler(0.0f, 0.0f, playerRotation.eulerAngles.y);
-            // Set hand
+            // Set hand color
             handImage.color = RustyCompassPlugin._HandColor.Value;
-            // Set biomes
+            // Set biomes settings
             if (Player.m_localPlayer)
             {
                 var currentBiomes = Player.m_localPlayer.m_currentBiome;
@@ -550,7 +690,7 @@ public static class HUDPatches
                     biomesText.gameObject.SetActive(biomesName);
                 }
             }
-            // Set wind marker
+            // Set wind marker settings
             windMarkerImage.color = RustyCompassPlugin._WindMarkerColor.Value;
             windMarker.rotation = Quaternion.Euler(
                 0.0f, 0.0f,
@@ -561,21 +701,14 @@ public static class HUDPatches
                 windMarker.gameObject.SetActive(windIcon);
             }
             // Enable/Disable
-            if (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On)
-            {
-                compassContainer.gameObject.SetActive(
-                    RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On
-                    && compassCircle);
-                
-            }
-            else
-            {
-                compassContainer.gameObject.SetActive(
-                    RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On 
-                    && RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Circle
-                );
-            }
-            
+            compassContainer.gameObject.SetActive(
+                RustyCompassPlugin._isModActive.Value == RustyCompassPlugin.Toggle.On &&
+                (
+                    (RustyCompassPlugin._useCompassTokens.Value == RustyCompassPlugin.Toggle.On && compassCircle) ||
+                    (RustyCompassPlugin._useCompassTokens.Value != RustyCompassPlugin.Toggle.On &&
+                     RustyCompassPlugin._CompassType.Value == RustyCompassPlugin.CompassType.Circle)
+                )
+            );
         }
     }
 }
