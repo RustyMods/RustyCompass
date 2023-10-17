@@ -271,8 +271,8 @@ public static class HUDPatches
             List<PinData> latestPinData = GetLatestPinData();
             
             // Delete all pins
-            foreach (PinData pd in BarPins) UnityEngine.Object.Destroy(pd.m_uiElement);
-            foreach (PinData cpd in CirclePins) UnityEngine.Object.Destroy(cpd.m_uiElement);
+            foreach (PinData barPin in BarPins) UnityEngine.Object.Destroy(barPin.m_uiElement);
+            foreach (PinData circlePin in CirclePins) UnityEngine.Object.Destroy(circlePin.m_uiElement);
             // Clear pin lists
             BarPins.Clear();
             CirclePins.Clear();
@@ -320,8 +320,8 @@ public static class HUDPatches
                     // Set values
                     rect.anchoredPosition = new Vector2(distanceFromPlayer.x, distanceFromPlayer.z);
                     pinImage.color = RustyCompassPlugin._CirclePinsColor.Value;
-                    
                     textMesh.text = $"{localizedName} (<color=orange>{Mathf.Round(totalDistance)}</color>)";
+                    textMesh.color = RustyCompassPlugin._CirclePinsColor.Value;
                     
                     // Set size of pin
                     float percentage = maxSize / totalDistance;
@@ -399,6 +399,7 @@ public static class HUDPatches
                     rect.anchoredPosition = new Vector2(positionX, positionY);
                     pinImage.color = RustyCompassPlugin._CompassPinsColor.Value;
                     textMesh.text = $"{localizedName} (<color=orange>{Mathf.Round(totalDistance)}</color>)";
+                    textMesh.color = RustyCompassPlugin._CompassPinsColor.Value;
                     
                     // Set size of pin
                     float percentage = maxSize / totalDistance;

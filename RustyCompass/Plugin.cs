@@ -36,18 +36,18 @@ namespace RustyCompass
             // CurrentVersion = ModVersion, 
             // MinimumRequiredVersion = ModVersion
         };
+        
+        public static readonly Sprite? CompassSprite = SpriteManager.RegisterSprite("rustyCompassIcon.png");
+        public static readonly Sprite? CompassArrow = SpriteManager.RegisterSprite("compassArrowIcon.png");
+        public static readonly Sprite? CompassSimple = SpriteManager.RegisterSprite("rustyCompassSimple.png");
+        public static readonly Sprite? CompassBW = SpriteManager.RegisterSprite("rustyCompassBW.png");
+        public static readonly Sprite? CompassViking = SpriteManager.RegisterSprite("rustyCompassViking.png");
 
-        public static Sprite? CompassSprite;
-        public static Sprite? CompassArrow;
-        public static Sprite? CompassSimple;
-        public static Sprite? CompassBW;
-        public static Sprite? CompassViking;
-
-        public static Sprite? NorthIcon;
-        public static Sprite? SouthIcon;
-        public static Sprite? EastIcon;
-        public static Sprite? WestIcon;
-        public static Sprite? RuneIcon;
+        public static readonly Sprite? NorthIcon = SpriteManager.RegisterSprite("compassNorth.png");
+        public static readonly Sprite? SouthIcon = SpriteManager.RegisterSprite("compassSouth.png");
+        public static readonly Sprite? EastIcon = SpriteManager.RegisterSprite("compassEast.png");
+        public static readonly Sprite? WestIcon = SpriteManager.RegisterSprite("compassWest.png");
+        public static readonly Sprite? RuneIcon = SpriteManager.RegisterSprite("compassRune.png");
 
         public enum Toggle
         {
@@ -180,20 +180,6 @@ namespace RustyCompass
             _TameTrackEnabled = config("4 - Tame Tracker Settings", "Tame Tracker", Toggle.Off,
                 "If on, tames are automatically pinned on compass bar and minimap", false);
             
-            #endregion
-            
-            #region Register sprites
-            CompassSprite = SpriteManager.RegisterSprite("rustyCompassIcon.png");
-            CompassArrow = SpriteManager.RegisterSprite("compassArrowIcon.png");
-            CompassSimple = SpriteManager.RegisterSprite("rustyCompassSimple.png");
-            CompassBW = SpriteManager.RegisterSprite("rustyCompassBW.png");
-            CompassViking = SpriteManager.RegisterSprite("rustyCompassViking.png");
-
-            NorthIcon = SpriteManager.RegisterSprite("compassNorth.png");
-            SouthIcon = SpriteManager.RegisterSprite("compassSouth.png");
-            EastIcon = SpriteManager.RegisterSprite("compassEast.png");
-            WestIcon = SpriteManager.RegisterSprite("compassWest.png");
-            RuneIcon = SpriteManager.RegisterSprite("compassRune.png");
             #endregion
             #region Register Prefabs
             Item CompassToken1 = new("compassbundle", "RS_Compass_Token_Gold");
