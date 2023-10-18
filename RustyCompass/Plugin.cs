@@ -19,7 +19,7 @@ namespace RustyCompass
     public class RustyCompassPlugin : BaseUnityPlugin
     {
         internal const string ModName = "RustyCompass";
-        internal const string ModVersion = "1.0.6";
+        internal const string ModVersion = "1.0.7";
         internal const string Author = "RustyMods";
         private const string ModGUID = Author + "." + ModName;
         private static string ConfigFileName = ModGUID + ".cfg";
@@ -106,11 +106,10 @@ namespace RustyCompass
                 "Alignment of compass",
                 false
                 );
-            Vector2 defaultSize = new Vector2(200f, 200f);
             _CompassSize = config(
                 "2 - Circle Compass Settings",
                 "Compass Size",
-                defaultSize,
+                200f,
                 "Size of compass",
                 false
                 );
@@ -118,7 +117,7 @@ namespace RustyCompass
             _CompassColor = config(
                 "2 - Circle Compass Settings",
                 "Compass Color",
-                Color.white, 
+                Color.black, 
                 "Color of the compass",
                 false
                 );
@@ -153,8 +152,12 @@ namespace RustyCompass
                 );
             _CirclePinsColor = config("2 - Circle Compass Settings", "Pin Color", Color.white,
                 "Set the colors of the pins", false);
-            _CirclePinsMaxSize = config("2 - Circle Compass Settings", "Pin Size", 30f,
+            _CirclePinsMaxSize = config("2 - Circle Compass Settings", "Pin Max Size", 30f,
                 "Pin size for the circle compass", false);
+            _CircleDirectionIcons = config("2 - Circle Compass Settings", "NESW Icon Placement",
+                120f, "Placement of the icons based on center of compass", false);
+            _CircleDirectionColor = config("2 - Circle Compass Settings", "NWSW Color", Color.white,
+                "Color of compass directions", false);
             // Bar Compass Settings
             _CompassBarColor = config(
                 "3 - Bar Compass Settings", "Compass Bar Color",
@@ -174,7 +177,7 @@ namespace RustyCompass
             _CompassPinsColor = config("3 - Bar Compass Settings", "Compass Pins Color", Color.white,
                 "Color of the pins on the bar", false);
             
-            _CompassPinsMaxSize = config("3 - Bar Compass Settings", "Bar Pins Max Size", 50f,
+            _CompassPinsMaxSize = config("3 - Bar Compass Settings", "Pins Max Size", 50f,
                 "Size of compass bar pins", false);
 
             _TameTrackEnabled = config("4 - Tame Tracker Settings", "Tame Tracker", Toggle.Off,
@@ -326,12 +329,13 @@ namespace RustyCompass
         public static ConfigEntry<Color> _CompassColor = null!;
         public static ConfigEntry<Compass> _CompassSprite = null!;
         public static ConfigEntry<Vector2> _CompassPosition = null!;
-        public static ConfigEntry<Vector2> _CompassSize = null!;
+        public static ConfigEntry<float> _CompassSize = null!;
         public static ConfigEntry<Color> _HandColor = null!;
         public static ConfigEntry<Color> _WindMarkerColor = null!;
         public static ConfigEntry<Color> _CirclePinsColor = null!;
         public static ConfigEntry<float> _CirclePinsMaxSize = null!;
-
+        public static ConfigEntry<float> _CircleDirectionIcons = null!;
+        public static ConfigEntry<Color> _CircleDirectionColor = null!;
         // Bar Compass Settings
         public static ConfigEntry<Color> _CompassBarColor = null!;
         public static ConfigEntry<Vector2> _CompassBarIconSize = null!;

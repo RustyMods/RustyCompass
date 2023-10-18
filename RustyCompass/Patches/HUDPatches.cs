@@ -39,8 +39,11 @@ public static class HUDPatches
         private static void Postfix(Hud __instance)
         {
             root = __instance.m_rootObject;
-            font = root.transform.Find("staminapanel").Find("Stamina").Find("StaminaText")
-                .GetComponent<TextMeshProUGUI>().font;
+            Transform staminaPanel = root.transform.Find("staminapanel");
+            Transform stamina = staminaPanel.Find("Stamina");
+            Transform staminaText = stamina.Find("StaminaText");
+            staminaText.TryGetComponent(out TextMeshProUGUI textMeshPro);
+            if (textMeshPro) font = textMeshPro.font;
 
             CreateCompassCircle();
             CreateCompassBar();
@@ -110,12 +113,54 @@ public static class HUDPatches
             RectTransform backgroundRect = background.AddComponent<RectTransform>();
             backgroundRect.SetParent(CompassContainer.transform);
             backgroundRect.anchoredPosition = new Vector2(0f, 0f);
-            backgroundRect.sizeDelta = RustyCompassPlugin._CompassSize.Value;
+            backgroundRect.sizeDelta = new Vector2(
+                RustyCompassPlugin._CompassSize.Value, 
+                RustyCompassPlugin._CompassSize.Value);
 
             Image backgroundImage = background.AddComponent<Image>();
             backgroundImage.sprite = RustyCompassPlugin.CompassBW;
             backgroundImage.color = Color.white;
             backgroundImage.maskable = true;
+            
+            GameObject north = new GameObject("north");
+            RectTransform northRect = north.AddComponent<RectTransform>();
+            northRect.SetParent(background.transform);
+            northRect.anchoredPosition = new Vector2(0f, 0f);
+            northRect.sizeDelta = new Vector2(50f, 50f);
+
+            Image northImage = north.AddComponent<Image>();
+            northImage.sprite = RustyCompassPlugin.NorthIcon;
+            northImage.color = Color.white;
+
+            GameObject east = new GameObject("east");
+            RectTransform eastRect = east.AddComponent<RectTransform>();
+            eastRect.SetParent(background.transform);
+            eastRect.anchoredPosition = new Vector2(0f, 0f);
+            eastRect.sizeDelta = new Vector2(50f, 50f);
+
+            Image eastImage = east.AddComponent<Image>();
+            eastImage.sprite = RustyCompassPlugin.EastIcon;
+            eastImage.color = Color.white;
+
+            GameObject south = new GameObject("south");
+            RectTransform southRect = south.AddComponent<RectTransform>();
+            southRect.SetParent(background.transform);
+            southRect.anchoredPosition = new Vector2(0f, 0f);
+            southRect.sizeDelta = new Vector2(50f, 50f);
+
+            Image southImage = south.AddComponent<Image>();
+            southImage.sprite = RustyCompassPlugin.SouthIcon;
+            southImage.color = Color.white;
+
+            GameObject west = new GameObject("west");
+            RectTransform westRect = west.AddComponent<RectTransform>();
+            westRect.SetParent(background.transform);
+            westRect.anchoredPosition = new Vector2(0f, 0f);
+            westRect.sizeDelta = new Vector2(50f, 50f);
+
+            Image westImage = west.AddComponent<Image>();
+            westImage.sprite = RustyCompassPlugin.WestIcon;
+            westImage.color = Color.white;
 
             GameObject compassHand = new GameObject("hand");
             RectTransform handRect = compassHand.AddComponent<RectTransform>();
@@ -177,7 +222,7 @@ public static class HUDPatches
             root = __instance.m_rootObject;
             playerRotation = Utils.GetMainCamera().transform.rotation;
             playerPosition = Utils.GetMainCamera().transform.position;
-
+            
             UpdateCompassCircle();
             UpdateCompassBar();
             UpdatePins();
@@ -652,6 +697,11 @@ public static class HUDPatches
             Transform hand = compassContainer.Find("hand");
             Transform biomes = compassContainer.transform.Find("biomes");
             Transform windMarker = compassContainer.Find("windMarker");
+
+            Transform north = background.Find("north");
+            Transform east = background.Find("east");
+            Transform south = background.Find("south");
+            Transform west = background.Find("west");
             
             compassContainer.TryGetComponent(out RectTransform compassRect);
             background.TryGetComponent(out RectTransform backgroundRect);
@@ -660,13 +710,23 @@ public static class HUDPatches
             biomes.TryGetComponent(out TextMeshProUGUI biomesText);
             windMarker.TryGetComponent(out Image windMarkerImage);
 
+            north.TryGetComponent(out RectTransform northRect);
+            east.TryGetComponent(out RectTransform eastRect);
+            south.TryGetComponent(out RectTransform southRect);
+            west.TryGetComponent(out RectTransform westRect);
+
+            north.TryGetComponent(out Image northImage);
+            east.TryGetComponent(out Image eastImage);
+            south.TryGetComponent(out Image southImage);
+            west.TryGetComponent(out Image westImage);
+
             if (!compassRect || !backgroundRect || !backgroundImage || !handImage || !biomesText ||
-                !windMarkerImage) return;
+                !windMarkerImage || !northRect || !eastRect || !southRect || !westRect) return;
             
             // Set container position
             compassRect.anchoredPosition = RustyCompassPlugin._CompassPosition.Value;
             // Set compass settings
-            backgroundRect.sizeDelta = RustyCompassPlugin._CompassSize.Value;
+            backgroundRect.sizeDelta = new Vector2(RustyCompassPlugin._CompassSize.Value, RustyCompassPlugin._CompassSize.Value);
             backgroundImage.color = RustyCompassPlugin._CompassColor.Value;
             backgroundImage.sprite = RustyCompassPlugin._CompassSprite.Value switch
             {
@@ -678,6 +738,26 @@ public static class HUDPatches
             };
             // Set compass rotation based on camera rotation
             background.rotation = Quaternion.Euler(0.0f, 0.0f, playerRotation.eulerAngles.y);
+            // Calculate the counter-rotation angle
+            float counterRotation = background.eulerAngles.y;
+            // Set direction icons to counter-rotate against the background
+            north.rotation = Quaternion.Euler(0.0f, 0.0f, counterRotation);
+            east.rotation = Quaternion.Euler(0.0f, 0.0f, counterRotation);
+            south.rotation = Quaternion.Euler(0.0f, 0.0f, counterRotation);
+            west.rotation = Quaternion.Euler(0.0f, 0.0f, counterRotation);
+
+            // Set direction icons to their desired positions
+            northRect.anchoredPosition = new Vector2(0f, RustyCompassPlugin._CircleDirectionIcons.Value);
+            eastRect.anchoredPosition = new Vector2(-RustyCompassPlugin._CircleDirectionIcons.Value, 0f);
+            southRect.anchoredPosition = new Vector2(0f, -RustyCompassPlugin._CircleDirectionIcons.Value);
+            westRect.anchoredPosition = new Vector2(RustyCompassPlugin._CircleDirectionIcons.Value, 0f);
+            
+            // Set direction icons color
+            northImage.color = RustyCompassPlugin._CircleDirectionColor.Value;
+            eastImage.color = RustyCompassPlugin._CircleDirectionColor.Value;
+            southImage.color = RustyCompassPlugin._CircleDirectionColor.Value;
+            westImage.color = RustyCompassPlugin._CircleDirectionColor.Value;
+            
             // Set hand color
             handImage.color = RustyCompassPlugin._HandColor.Value;
             // Set biomes settings
